@@ -1,0 +1,17 @@
+site_name: ${{ values.name }}
+site_description: ${{ values.description }}
+
+nav:
+  - Home: index.md
+{%- if 'runbook' in values.documents %}
+  - Runbook: runbook.md
+{%- endif %}
+{%- if 'system-architecture' in values.documents %}
+  - System architecture: system-architecture.md
+{%- endif %}
+{%- if 'command-reference' in values.documents %}
+  - Command reference: command-reference.md
+{%- endif %}
+
+plugins:
+  - techdocs-core

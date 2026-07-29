@@ -1,0 +1,153 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: documentation
+  title: Documentation Site (TechDocs)
+  description: |
+    Standalone TechDocs site pre-filled with the Backstage community
+    documentation templates: runbooks, system architecture documents and
+    command references. Pick the ones you need.
+  tags:
+    - documentation
+    - techdocs
+    - mkdocs
+    - recommended
+spec:
+  owner: user:guest
+  type: documentation
+
+  parameters:
+    - title: Documentation details
+      required:
+        - name
+        - description
+        - owner
+      properties:
+        name:
+          title: Name
+          type: string
+          description: Unique name of the documentation project
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+          ui:autofocus: true
+        description:
+          title: Description
+          type: string
+          description: What does this documentation cover?
+        owner:
+          title: Owner
+          type: string
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: [Group, User]
+        system:
+          title: System
+          type: string
+          description: System this documentation belongs to
+          ui:field: EntityPicker
+          ui:options:
+            catalogFilter:
+              kind: System
+            allowArbitraryValues: true
+
+    - title: Which documents?
+      required:
+        - documents
+      properties:
+        documents:
+          title: Documents to include
+          type: array
+          description: Community templates to pre-fill, each as its own page
+          minItems: 1
+          default:
+            - runbook
+            - system-architecture
+          items:
+            type: string
+            enum:
+              - runbook
+              - system-architecture
+              - command-reference
+            enumNames:
+              - Runbook
+              - System architecture
+              - Command reference
+          uniqueItems: true
+          ui:widget: checkboxes
+
+    - title: Destination
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+
+  steps:
+    - id: fetch-base
+      name: Fetch skeleton
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          system: ${{ parameters.system }}
+          documents: ${{ parameters.documents }}
+          destination: ${{ parameters.repoUrl | parseRepoUrl }}
+
+    # The community documentation templates are plain markdown, so they are
+    # pulled in as-is rather than rendered. Each selected document becomes a
+    # page in docs/, wired into the nav by the skeleton's mkdocs.yml.
+    - id: fetch-runbook
+      name: Add runbook
+      if: ${{ 'runbook' in parameters.documents }}
+      action: fetch:plain:file
+      input:
+        url: https://github.com/arcgang/software-templates/blob/main/documentation-templates/runbook-template.md
+        targetPath: docs/runbook.md
+
+    - id: fetch-architecture
+      name: Add system architecture doc
+      if: ${{ 'system-architecture' in parameters.documents }}
+      action: fetch:plain:file
+      input:
+        url: https://github.com/arcgang/software-templates/blob/main/documentation-templates/system-architecture-template.md
+        targetPath: docs/system-architecture.md
+
+    - id: fetch-commands
+      name: Add command reference
+      if: ${{ 'command-reference' in parameters.documents }}
+      action: fetch:plain:file
+      input:
+        url: https://github.com/arcgang/software-templates/blob/main/documentation-templates/command-reference-template.md
+        targetPath: docs/command-reference.md
+
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        description: ${{ parameters.description }}
+        repoUrl: ${{ parameters.repoUrl }}
+        defaultBranch: main
+        repoVisibility: private
+
+    - id: register
+      name: Register in catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Read the docs
+        icon: docs
+        entityRef: ${{ steps['register'].output.entityRef }}

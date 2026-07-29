@@ -7,6 +7,11 @@ Rancher Desktop k3s cluster.
 | --- | --- |
 | [`nodejs-service`](nodejs-service/template.yaml) | Express service + Dockerfile + k8s manifests + TechDocs + GitHub Actions. Publishes to GitHub. |
 | [`fastapi-service`](fastapi-service/template.yaml) | FastAPI service + Dockerfile + k8s manifests. Publishes to GitHub. |
+| [`documentation`](documentation/template.yaml) | Standalone TechDocs site, pre-filled with the Backstage community documentation templates (runbook, system architecture, command reference). |
+
+The Backstage community also publishes a set of templates at
+[backstage/software-templates](https://github.com/backstage/software-templates).
+Those are registered separately from a fork; see `app-config.yaml`.
 
 ## Layout
 
