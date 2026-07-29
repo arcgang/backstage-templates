@@ -1,0 +1,9 @@
+# macOS
+.DS_Store
+
+# Editors
+*.swp
+
+# Never commit secrets — templates are public-facing
+.env
+*-credentials.yaml

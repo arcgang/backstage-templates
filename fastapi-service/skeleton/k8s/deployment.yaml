@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${{ values.name }}
+  labels:
+    app: ${{ values.name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ${{ values.name }}
+  template:
+    metadata:
+      labels:
+        app: ${{ values.name }}
+    spec:
+      containers:
+        - name: ${{ values.name }}
+          image: ${{ values.name }}:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: ${{ values.port }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: ${{ values.port }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${{ values.name }}
+spec:
+  selector:
+    app: ${{ values.name }}
+  ports:
+    - port: 80
+      targetPort: ${{ values.port }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ${{ values.name }}
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: ${{ values.hostname }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ${{ values.name }}
+                port:
+                  number: 80
